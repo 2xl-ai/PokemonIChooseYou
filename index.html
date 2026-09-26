@@ -13,96 +13,222 @@
 </head>
 <body>
   <div id="app">
-    <!-- Top HUD -->
+    <!-- Top HUD: Stats & Inventory -->
     <header class="hud-header">
       <div class="trainer-badge">
         <span class="trainer-avatar">🧢</span>
         <div class="trainer-info">
-          <span class="trainer-level">Trainer Lv. 1</span>
-          <div class="exp-track">
-            <div id="exp-bar" class="exp-bar" style="width: 10%;"></div>
+          <span id="trainer-level-text" class="trainer-level">Trainer Lv. 1</span>
+          <div class="partner-hp-container">
+            <span class="hp-label">HP:</span>
+            <div class="hp-track">
+              <div id="partner-hp-bar" class="partner-hp-bar" style="width: 100%;"></div>
+            </div>
+            <span id="partner-hp-text" class="hp-number">100/100</span>
           </div>
         </div>
       </div>
 
       <div class="hud-counters">
-        <div class="badge-item pokedex-btn" id="btn-pokedex" title="Pokédex">
-          <span>📖</span>
-          <span id="caught-count">0</span>
+        <div class="inventory-pill" title="PokéCoins">
+          <span>🪙</span>
+          <span id="coins-count">100</span>
         </div>
-        <div class="badge-item sound-btn" id="btn-sound" title="Toggle Sound">
+        <div class="inventory-pill" id="hud-potions" title="Potions">
+          <span>🧪</span>
+          <span id="potions-count">3</span>
+        </div>
+        <button class="icon-btn" id="btn-sound" title="Toggle Sound">
           <span id="sound-icon">🔊</span>
-        </div>
+        </button>
       </div>
     </header>
 
-    <!-- Main Game Canvas Container -->
-    <main class="game-container">
-      <canvas id="game-canvas"></canvas>
+    <!-- Notification Banner -->
+    <div id="game-banner" class="game-banner hidden">
+      <span id="banner-text">Welcome to the adventure!</span>
+    </div>
 
-      <!-- Message / Notification Banner -->
-      <div id="game-banner" class="game-banner hidden">
-        <span id="banner-text">A wild Pokémon appeared!</span>
-      </div>
+    <!-- MAIN VIEW CONTAINER (Screens) -->
+    <main class="main-viewport">
+      
+      <!-- SCREEN 1: 🌿 EXPLORE (Tall Grass Meadow) -->
+      <section id="screen-explore" class="screen-view active">
+        <div class="meadow-header">
+          <h2>🌾 Tall Grass Meadow</h2>
+          <p>Tap a grass patch to search for wild Pokémon or hidden treasures!</p>
+        </div>
+        <div class="grass-field" id="grass-field">
+          <!-- 12 Grass Patches injected by JS -->
+        </div>
+        <div class="meadow-footer">
+          <button id="btn-rustle-all" class="btn-primary-fun">🌿 Rustle Tall Grass!</button>
+        </div>
+      </section>
 
-      <!-- Action Floating Popups -->
-      <div id="fx-layer" class="fx-layer"></div>
-    </main>
+      <!-- SCREEN 2: ⚔️ BATTLE & CATCH -->
+      <section id="screen-battle" class="screen-view">
+        <div class="battle-arena">
+          <canvas id="battle-canvas"></canvas>
+          <div id="battle-fx-layer" class="fx-layer"></div>
 
-    <!-- Bottom Controls & Selector -->
-    <footer class="hud-footer">
-      <!-- Starter Selection Bar -->
-      <div class="starter-bar">
-        <span class="starter-label">My Partner:</span>
-        <div class="starter-chips" id="starter-chips">
-          <button class="starter-chip active" data-pokemon="bulbasaur" title="Bulbasaur">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbasaur" />
-            <span>Bulbasaur</span>
+          <!-- Opponent HUD Card -->
+          <div id="opponent-hud" class="battle-hud-card top-card">
+            <div class="hud-name-row">
+              <span id="opponent-name" class="hud-pokemon-name">Wild Pokémon</span>
+              <span id="opponent-level" class="hud-level">Lv. 3</span>
+            </div>
+            <div class="hp-bar-outer">
+              <div id="opponent-hp-fill" class="hp-bar-fill"></div>
+            </div>
+            <div id="opponent-hp-val" class="hp-text">50/50</div>
+          </div>
+
+          <!-- Player HUD Card -->
+          <div id="player-battle-hud" class="battle-hud-card bottom-card">
+            <div class="hud-name-row">
+              <span id="battle-partner-name" class="hud-pokemon-name">Bulbasaur</span>
+              <span class="hud-level">Lv. 5</span>
+            </div>
+            <div class="hp-bar-outer">
+              <div id="battle-partner-hp-fill" class="hp-bar-fill hp-green"></div>
+            </div>
+            <div id="battle-partner-hp-val" class="hp-text">100/100</div>
+          </div>
+        </div>
+
+        <!-- Battle Action Dock -->
+        <div class="battle-dock">
+          <div class="battle-dialogue" id="battle-dialogue">
+            What will Bulbasaur do?
+          </div>
+          <div class="battle-buttons-grid">
+            <button id="btn-attack" class="btn-battle btn-move">
+              <span id="btn-move-text">🍃 Vine Whip!</span>
+            </button>
+            <button id="btn-potion" class="btn-battle btn-heal">
+              <span>🧪 Potion (<span id="btn-potion-qty">3</span>)</span>
+            </button>
+            <button id="btn-catch" class="btn-battle btn-ball disabled">
+              <span>🔴 Throw Ball</span>
+            </button>
+            <button id="btn-run" class="btn-battle btn-flee">
+              <span>🏃 Run Away</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: 🏡 POKÉMON HOUSE (Sanctuary) -->
+      <section id="screen-house" class="screen-view">
+        <div class="house-banner">
+          <h2>🏡 Pokémon Cozy House</h2>
+          <p>Your caught friends live here happily!</p>
+        </div>
+        
+        <div class="house-room">
+          <div class="house-decor">
+            <span class="decor-item bed">🛏️</span>
+            <span class="decor-item plant">🪴</span>
+            <span class="decor-item fire">🔥</span>
+            <span class="decor-item toy">⚽</span>
+          </div>
+          <div id="house-friends-stage" class="house-friends-stage">
+            <!-- Living friends wandering -->
+          </div>
+        </div>
+
+        <div class="house-actions">
+          <button id="btn-house-rest" class="btn-house-action">
+            <span>🛌 Rest & Heal All HP</span>
           </button>
-          <button class="starter-chip" data-pokemon="pikachu" title="Pikachu">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="Pikachu" />
-            <span>Pikachu</span>
-          </button>
-          <button class="starter-chip" data-pokemon="charmander" title="Charmander">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander" />
-            <span>Charmander</span>
-          </button>
-          <button class="starter-chip" data-pokemon="squirtle" title="Squirtle">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Squirtle" />
-            <span>Squirtle</span>
+          <button id="btn-buy-potion" class="btn-house-action btn-gold">
+            <span>🪙 Buy Potion (30 Coins)</span>
           </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Action Buttons -->
-      <div class="action-controls">
-        <button id="btn-choose-you" class="btn-choose-you">
-          <span class="btn-icon">✨</span>
-          <span class="btn-text">I CHOOSE YOU!</span>
-        </button>
-        <button id="btn-next-wild" class="btn-secondary">
-          <span>🌿 Next Wild</span>
-        </button>
-      </div>
+      <!-- SCREEN 4: 🚔 VILLAGE JAIL (Team Rocket Locked Up!) -->
+      <section id="screen-jail" class="screen-view">
+        <div class="jail-header">
+          <h2>🚔 Village Jail</h2>
+          <p>Team Rocket is locked behind bars!</p>
+        </div>
+        
+        <div class="jail-cell-scene">
+          <div class="jail-cell">
+            <div class="cell-bars">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
+            <div class="rocket-inmates">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png" alt="Meowth" class="inmate meowth" title="Meowth" />
+              <div class="inmate-dialogue">"We're blasting into jail again!" 😭</div>
+            </div>
+          </div>
+          <div class="jail-sign">
+            <span>TEAM ROCKET CAPTURES: </span>
+            <strong id="jail-capture-count">0</strong>
+          </div>
+        </div>
 
-      <!-- Swipe / Flick Prompt -->
-      <div class="swipe-hint" id="swipe-hint">
-        <span>👆 Swipe the Pokéball up to catch!</span>
-      </div>
-    </footer>
+        <div class="jail-reward-box">
+          <h3>💰 Bounty Rewards:</h3>
+          <p>Defeat Team Rocket when they ambush in the grass to earn <strong>200 PokéCoins</strong> and send them to jail!</p>
+        </div>
+      </section>
 
-    <!-- Pokédex Modal -->
-    <div id="pokedex-modal" class="modal hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2>📖 My Caught Pokémon</h2>
-          <button id="btn-close-pokedex" class="btn-close">&times;</button>
+      <!-- SCREEN 5: 📖 POKÉDEX (Collection Album) -->
+      <section id="screen-pokedex" class="screen-view">
+        <div class="pokedex-header">
+          <h2>📖 Sticker Pokédex</h2>
+          <p>Total Pokémon Caught: <strong id="dex-total-caught">0</strong></p>
         </div>
         <div id="pokedex-grid" class="pokedex-grid">
-          <!-- Dynamically populated -->
+          <!-- Dynamically filled with caught cards -->
         </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="nav-tab active" data-tab="explore">
+        <span class="nav-icon">🌾</span>
+        <span class="nav-text">Grass</span>
+      </button>
+      <button class="nav-tab" data-tab="battle">
+        <span class="nav-icon">⚔️</span>
+        <span class="nav-text">Battle</span>
+      </button>
+      <button class="nav-tab" data-tab="house">
+        <span class="nav-icon">🏡</span>
+        <span class="nav-text">House</span>
+      </button>
+      <button class="nav-tab" data-tab="jail">
+        <span class="nav-icon">🚔</span>
+        <span class="nav-text">Jail</span>
+      </button>
+      <button class="nav-tab" data-tab="pokedex">
+        <span class="nav-icon">📖</span>
+        <span class="nav-text">Dex</span>
+      </button>
+    </nav>
+
+    <!-- Partner Switch Drawer (Quick Switch) -->
+    <div class="quick-partner-drawer">
+      <span class="drawer-label">Partner:</span>
+      <div class="partner-mini-chips">
+        <button class="mini-chip active" data-pokemon="bulbasaur">🍃 Bulbasaur</button>
+        <button class="mini-chip" data-pokemon="pikachu">⚡ Pikachu</button>
+        <button class="mini-chip" data-pokemon="charmander">🔥 Charmander</button>
+        <button class="mini-chip" data-pokemon="squirtle">💧 Squirtle</button>
       </div>
     </div>
+
   </div>
 
   <script type="module" src="./src/main.js"></script>

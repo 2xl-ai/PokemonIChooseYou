@@ -74,7 +74,33 @@ class SoundController {
   }
 
   playHit() {
-    this.playTone(320, 'square', 0.1, 0.2);
+    this.playTone(180, 'square', 0.15, 0.25);
+  }
+
+  playDamage() {
+    this.playTone(140, 'sawtooth', 0.2, 0.3);
+  }
+
+  playHeal() {
+    [400, 520, 660, 880].forEach((freq, idx) => {
+      setTimeout(() => this.playTone(freq, 'sine', 0.15, 0.2), idx * 80);
+    });
+  }
+
+  playCoin() {
+    [987, 1318].forEach((freq, idx) => {
+      setTimeout(() => this.playTone(freq, 'triangle', 0.12, 0.25), idx * 70);
+    });
+  }
+
+  playSiren() {
+    [440, 580, 440, 580].forEach((freq, idx) => {
+      setTimeout(() => this.playTone(freq, 'sawtooth', 0.18, 0.2), idx * 140);
+    });
+  }
+
+  playRustle() {
+    this.playTone(180, 'triangle', 0.08, 0.15);
   }
 
   playWobble(shakeIndex = 1) {
@@ -84,12 +110,17 @@ class SoundController {
   }
 
   playCatch() {
-    // 5-note victory fanfare
     const notes = [440, 554, 659, 880, 1108];
     notes.forEach((freq, idx) => {
       setTimeout(() => {
         this.playTone(freq, 'triangle', 0.22, 0.3);
       }, idx * 110);
+    });
+  }
+
+  playLoss() {
+    [320, 280, 240, 180].forEach((freq, idx) => {
+      setTimeout(() => this.playTone(freq, 'sawtooth', 0.2, 0.25), idx * 120);
     });
   }
 
@@ -99,22 +130,18 @@ class SoundController {
     if (!this.ctx) return;
 
     if (pokemonName === 'pikachu') {
-      // Electric sparkle zaps!
       [700, 1100, 950, 1400].forEach((f, i) => {
         setTimeout(() => this.playTone(f, 'sawtooth', 0.08, 0.18), i * 60);
       });
     } else if (pokemonName === 'bulbasaur') {
-      // Grass vine whip woosh!
       [220, 330, 440, 550].forEach((f, i) => {
         setTimeout(() => this.playTone(f, 'sine', 0.12, 0.25), i * 70);
       });
     } else if (pokemonName === 'charmander') {
-      // Fire flame whoosh!
       [180, 240, 320, 220].forEach((f, i) => {
         setTimeout(() => this.playTone(f, 'square', 0.12, 0.15), i * 75);
       });
     } else if (pokemonName === 'squirtle') {
-      // Water bubble pops!
       [600, 850, 750, 1000].forEach((f, i) => {
         setTimeout(() => this.playTone(f, 'sine', 0.09, 0.22), i * 65);
       });
