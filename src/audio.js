@@ -50,7 +50,6 @@ class SoundController {
   playHammer() {
     if (!this.enabled) return;
     this.init();
-    // Clang! Clang! Clang!
     [380, 520, 680].forEach((freq, idx) => {
       setTimeout(() => {
         this.playTone(freq, 'triangle', 0.1, 0.35);
@@ -70,19 +69,52 @@ class SoundController {
 
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(250, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.25);
+      osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.3);
 
-      gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start();
-      osc.stop(this.ctx.currentTime + 0.25);
+      osc.stop(this.ctx.currentTime + 0.3);
     } catch (e) {
       console.warn(e);
     }
+  }
+
+  playBeam() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.4);
+
+      gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.4);
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  playBounce() {
+    this.playTone(180, 'triangle', 0.08, 0.25);
+  }
+
+  playClickLock() {
+    this.playTone(950, 'square', 0.06, 0.3);
   }
 
   playHit() {
@@ -118,7 +150,7 @@ class SoundController {
   playWobble(shakeIndex = 1) {
     const freqs = [350, 440, 520];
     const freq = freqs[shakeIndex - 1] || 440;
-    this.playTone(freq, 'triangle', 0.18, 0.25);
+    this.playTone(freq, 'triangle', 0.2, 0.3);
   }
 
   playCatch() {

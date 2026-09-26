@@ -127,11 +127,11 @@ const state = {
   trainerExp: parseInt(localStorage.getItem('pokemon_exp') || '0', 10),
   caughtDex: JSON.parse(localStorage.getItem('pokemon_caught') || '{}'),
   
-  // House Building Progression
+  // House Progression
   houseStage: parseInt(localStorage.getItem('pokemon_house_stage') || '0', 10),
   materials: JSON.parse(localStorage.getItem('pokemon_materials') || '{"wood":0,"bricks":0,"tiles":0,"cushions":0}'),
 
-  // Battle State
+  // Battle & Catch State
   battle: {
     active: false,
     isRocket: false,
@@ -139,7 +139,8 @@ const state = {
     opponentHp: 0,
     turn: 'player',
     opponentFainted: false,
-    particles: []
+    particles: [],
+    catchAnim: null // detailed animation controller
   }
 };
 
@@ -214,7 +215,6 @@ function getSprite(id) {
   return img;
 }
 
-// Preload starters and Rocket monsters
 Object.values(STARTERS).forEach(s => getSprite(s.id));
 ROCKET_POOL.forEach(r => getSprite(r.id));
 
@@ -237,7 +237,6 @@ function updateHUD() {
   marketCoinsVal.textContent = state.coins;
   jailCaptureCount.textContent = state.rocketArrests;
 
-  // Materials
   matWood.textContent = state.materials.wood;
   matBricks.textContent = state.materials.bricks;
   matTiles.textContent = state.materials.tiles;
@@ -305,7 +304,6 @@ navTabs.forEach(tab => {
   });
 });
 
-// Partner switch chips
 miniChips.forEach(chip => {
   chip.addEventListener('click', () => {
     miniChips.forEach(c => c.classList.remove('active'));
@@ -317,7 +315,6 @@ miniChips.forEach(chip => {
   });
 });
 
-// Sound toggle
 btnSound.addEventListener('click', () => {
   const on = sound.toggle();
   soundIcon.textContent = on ? '🔊' : '🔇';
@@ -386,6 +383,7 @@ function startBattle(opponent, isRocket = false) {
   state.battle.turn = 'player';
   state.battle.opponentFainted = false;
   state.battle.particles = [];
+  state.battle.catchAnim = null;
 
   switchScreen('battle');
 
@@ -424,7 +422,7 @@ function updateBattleHUD() {
     battlePartnerHpFill.style.backgroundColor = '#ef4444';
   }
 
-  if (state.battle.opponentFainted && !state.battle.isRocket) {
+  if (state.battle.opponentFainted && !state.battle.isRocket && !state.battle.catchAnim) {
     btnCatch.classList.remove('disabled');
     btnCatch.classList.add('fainted-ready');
     btnCatch.innerHTML = '<span>🔴 THROW BALL! (FAINTED!)</span>';
@@ -437,15 +435,15 @@ function updateBattleHUD() {
 
 // Player Attack
 btnAttack.addEventListener('click', () => {
-  if (state.battle.turn !== 'player' || !state.battle.active) return;
+  if (state.battle.turn !== 'player' || !state.battle.active || state.battle.catchAnim) return;
   const starter = STARTERS[state.partner];
   sound.playMoveSound(state.partner);
 
   const rect = battleCanvas.getBoundingClientRect();
   for (let i = 0; i < 20; i++) {
     state.battle.particles.push({
-      x: rect.width * 0.7,
-      y: rect.height * 0.3,
+      x: rect.width * 0.72,
+      y: rect.height * 0.35,
       vx: (Math.random() - 0.5) * 8,
       vy: (Math.random() - 0.5) * 8,
       radius: Math.random() * 6 + 3,
@@ -456,7 +454,7 @@ btnAttack.addEventListener('click', () => {
 
   const dmg = starter.baseAtk + Math.floor(Math.random() * 8);
   state.battle.opponentHp -= dmg;
-  showFloatingFx(`-${dmg}`, rect.width * 0.7, rect.height * 0.25, '#ef4444');
+  showFloatingFx(`-${dmg}`, rect.width * 0.72, rect.height * 0.25, '#ef4444');
   battleDialogue.textContent = `${starter.name} used ${starter.move} for ${dmg} damage!`;
 
   if (state.battle.opponentHp <= 0) {
@@ -473,7 +471,7 @@ btnAttack.addEventListener('click', () => {
 
 // Player Potion
 btnPotion.addEventListener('click', () => {
-  if (state.battle.turn !== 'player' || !state.battle.active) return;
+  if (state.battle.turn !== 'player' || !state.battle.active || state.battle.catchAnim) return;
   if (state.potions <= 0) {
     showBanner('No Potions left! Buy some at the House!');
     return;
@@ -490,55 +488,16 @@ btnPotion.addEventListener('click', () => {
   updateBattleHUD();
 
   const rect = battleCanvas.getBoundingClientRect();
-  showFloatingFx('+40 HP 🧪', rect.width * 0.25, rect.height * 0.65, '#10b981');
+  showFloatingFx('+40 HP 🧪', rect.width * 0.28, rect.height * 0.65, '#10b981');
   battleDialogue.textContent = `Used a Potion! Healed ${STARTERS[state.partner].name} +40 HP!`;
 
   state.battle.turn = 'opponent';
   setTimeout(opponentTurn, 1000);
 });
 
-// Throw Pokéball (Enabled only when fainted!)
-btnCatch.addEventListener('click', () => {
-  if (!state.battle.opponentFainted || state.battle.isRocket || !state.battle.active) {
-    if (!state.battle.opponentFainted) {
-      showBanner('Wait! You must faint the Pokémon in battle first before catching!');
-    }
-    return;
-  }
-
-  state.battle.turn = 'ended';
-  sound.playThrow();
-  battleDialogue.textContent = `Throwing Pokéball at ${state.battle.opponent.name}...`;
-
-  setTimeout(() => sound.playWobble(1), 800);
-  setTimeout(() => sound.playWobble(2), 1600);
-  setTimeout(() => sound.playWobble(3), 2400);
-
-  setTimeout(() => {
-    sound.playCatch();
-    confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-
-    const opp = state.battle.opponent;
-    if (!state.caughtDex[opp.id]) {
-      state.caughtDex[opp.id] = { name: opp.name, count: 0 };
-    }
-    state.caughtDex[opp.id].count++;
-    state.trainerExp += 35;
-    state.coins += 15;
-    updateHUD();
-
-    battleDialogue.textContent = `🎉 Gotcha! ${opp.name} was caught! Added to your House!`;
-    showBanner(`🎉 Gotcha! ${opp.name} was caught!`, 3500);
-
-    setTimeout(() => {
-      state.battle.active = false;
-      switchScreen('house');
-    }, 2800);
-  }, 3200);
-});
-
 // Run Away
 btnRun.addEventListener('click', () => {
+  if (state.battle.catchAnim) return;
   sound.playRustle();
   state.battle.active = false;
   showBanner('Got away safely back to the grass! 🏃');
@@ -547,7 +506,7 @@ btnRun.addEventListener('click', () => {
 
 // Opponent Turn
 function opponentTurn() {
-  if (!state.battle.active || state.battle.opponentFainted) return;
+  if (!state.battle.active || state.battle.opponentFainted || state.battle.catchAnim) return;
 
   const opp = state.battle.opponent;
   sound.playDamage();
@@ -558,7 +517,7 @@ function opponentTurn() {
   updateBattleHUD();
 
   const rect = battleCanvas.getBoundingClientRect();
-  showFloatingFx(`-${dmg}`, rect.width * 0.25, rect.height * 0.65, '#ef4444');
+  showFloatingFx(`-${dmg}`, rect.width * 0.28, rect.height * 0.65, '#ef4444');
   battleDialogue.textContent = `${opp.name} attacked back for ${dmg} damage!`;
 
   if (state.partnerHp <= 0) {
@@ -568,13 +527,12 @@ function opponentTurn() {
   }
 }
 
-// When Opponent Faints
 function handleOpponentFaint() {
   if (state.battle.isRocket) {
     sound.playCatch();
     confetti({ particleCount: 120, spread: 90 });
     state.rocketArrests++;
-    state.coins += 200; // Big cash reward for house building!
+    state.coins += 200;
     updateHUD();
 
     battleDialogue.textContent = '🚔 Team Rocket was defeated and sent to JAIL! You earned 200 Coins! 💰';
@@ -591,7 +549,6 @@ function handleOpponentFaint() {
   }
 }
 
-// When Player Partner Faints
 function handlePartnerFaint() {
   sound.playLoss();
 
@@ -622,27 +579,331 @@ function handlePartnerFaint() {
   }, 3200);
 }
 
-// Battle Rendering Loop
+// ==========================================
+// 🔴 FULL REALISTIC POKÉMON CATCH ANIMATION!
+// ==========================================
+btnCatch.addEventListener('click', () => {
+  if (!state.battle.opponentFainted || state.battle.isRocket || !state.battle.active || state.battle.catchAnim) {
+    if (!state.battle.opponentFainted) {
+      showBanner('Wait! You must faint the Pokémon in battle first before catching!');
+    }
+    return;
+  }
+
+  state.battle.turn = 'ended';
+  btnCatch.classList.add('disabled');
+  btnCatch.classList.remove('fainted-ready');
+
+  const rect = battleCanvas.getBoundingClientRect();
+  const startX = rect.width * 0.28;
+  const startY = rect.height * 0.68;
+  const hoverX = rect.width * 0.72;
+  const hoverY = rect.height * 0.22;
+  const groundY = rect.height * 0.42;
+
+  state.battle.catchAnim = {
+    startTime: performance.now(),
+    startX,
+    startY,
+    hoverX,
+    hoverY,
+    groundY,
+    ballX: startX,
+    ballY: startY,
+    rotation: 0,
+    openAngle: 0,
+    pokemonScale: 1.0,
+    pokemonAlpha: 1.0,
+    buttonGlow: '#ffffff',
+    starsBurst: false,
+    soundFlags: { beam: false, bounce: false, wobble1: false, wobble2: false, wobble3: false, lock: false }
+  };
+
+  sound.playThrow();
+  battleDialogue.textContent = `Flicking Pokéball at ${state.battle.opponent.name}...`;
+});
+
+// Draw Pokéball with Open Top Half & Center Glow
+function drawPokeball(ctx, x, y, r, rotation = 0, openAngle = 0, buttonGlow = '#ffffff') {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+
+  // Ball Ground Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, r + 4, r * 0.9, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bottom Half (White)
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI, false);
+  ctx.closePath();
+  ctx.fill();
+
+  // Top Half (Red) with open hinge tilt
+  ctx.save();
+  if (openAngle !== 0) {
+    ctx.translate(-r, 0);
+    ctx.rotate(openAngle);
+    ctx.translate(r, 0);
+  }
+  ctx.fillStyle = '#ee1515';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, Math.PI, 0, false);
+  ctx.closePath();
+  ctx.fill();
+
+  // Inner beam glow if open
+  if (openAngle !== 0) {
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.8, Math.PI, 0, false);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Black seam line
+  ctx.strokeStyle = '#222222';
+  ctx.lineWidth = r * 0.16;
+  ctx.beginPath();
+  ctx.moveTo(-r, 0);
+  ctx.lineTo(r, 0);
+  ctx.stroke();
+
+  // Outer circle border
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Center button outer
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Center button glowing core
+  ctx.fillStyle = buttonGlow;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.16, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// Main Battle Canvas Render Loop
 function renderBattle() {
   if (state.currentTab === 'battle' && state.battle.active) {
     const rect = battleCanvas.getBoundingClientRect();
     bCtx.clearRect(0, 0, rect.width, rect.height);
-    const time = performance.now() / 1000;
+    const now = performance.now();
+    const time = now / 1000;
 
     const oppX = rect.width * 0.72;
     const oppY = rect.height * 0.35;
-    bCtx.fillStyle = 'rgba(0,0,0,0.18)';
-    bCtx.beginPath();
-    bCtx.ellipse(oppX, oppY + 50, 42, 12, 0, 0, Math.PI * 2);
-    bCtx.fill();
-
     const oppImg = getSprite(state.battle.opponent.id);
-    if (oppImg && oppImg.complete) {
-      const bob = state.battle.opponentFainted ? 20 : Math.sin(time * 3) * 5;
-      const size = 110;
+
+    // ==========================================
+    // CATCH ANIMATION TICK
+    // ==========================================
+    if (state.battle.catchAnim) {
+      const anim = state.battle.catchAnim;
+      const elapsed = now - anim.startTime;
+
+      // PHASE 1: FLY (0 - 800ms)
+      if (elapsed < 800) {
+        const t = elapsed / 800;
+        anim.ballX = anim.startX + (anim.hoverX - anim.startX) * t;
+        // Parabolic arc
+        const arc = Math.sin(t * Math.PI) * 120;
+        anim.ballY = anim.startY + (anim.hoverY - anim.startY) * t - arc;
+        anim.rotation += 0.25;
+      }
+      // PHASE 2: OPEN & BEAM SUCK (800 - 1800ms)
+      else if (elapsed < 1800) {
+        anim.ballX = anim.hoverX;
+        anim.ballY = anim.hoverY;
+        anim.rotation = 0;
+        anim.openAngle = -0.55; // Mouth opens wide
+
+        if (!anim.soundFlags.beam) {
+          anim.soundFlags.beam = true;
+          sound.playBeam();
+          battleDialogue.textContent = `A brilliant red energy beam captures ${state.battle.opponent.name}! ✨`;
+        }
+
+        const beamT = (elapsed - 800) / 1000;
+        anim.pokemonScale = Math.max(0.05, 1.0 - beamT);
+        anim.pokemonAlpha = Math.max(0.2, 1.0 - beamT * 0.8);
+
+        // Draw Energy Laser Cone Beam
+        bCtx.save();
+        const beamGrad = bCtx.createLinearGradient(anim.ballX, anim.ballY, oppX, oppY + 30);
+        beamGrad.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
+        beamGrad.addColorStop(1, 'rgba(255, 203, 5, 0.3)');
+        bCtx.fillStyle = beamGrad;
+        bCtx.beginPath();
+        bCtx.moveTo(anim.ballX - 12, anim.ballY + 8);
+        bCtx.lineTo(anim.ballX + 12, anim.ballY + 8);
+        bCtx.lineTo(oppX + 50 * anim.pokemonScale, oppY + 45);
+        bCtx.lineTo(oppX - 50 * anim.pokemonScale, oppY + 45);
+        bCtx.closePath();
+        bCtx.fill();
+        bCtx.restore();
+
+        // Spawn capture swirl particles
+        if (Math.random() < 0.6) {
+          state.battle.particles.push({
+            x: oppX + (Math.random() - 0.5) * 60,
+            y: oppY + (Math.random() - 0.5) * 60,
+            vx: (anim.ballX - oppX) * 0.05,
+            vy: (anim.ballY - oppY) * 0.05,
+            radius: Math.random() * 5 + 2,
+            color: '#ef4444',
+            life: 0.8
+          });
+        }
+      }
+      // PHASE 3: SNAP & FALL TO GRASS (1800 - 2400ms)
+      else if (elapsed < 2400) {
+        anim.openAngle = 0; // Snapped shut!
+        anim.pokemonScale = 0; // Inside ball
+
+        if (!anim.soundFlags.bounce) {
+          anim.soundFlags.bounce = true;
+          sound.playBounce();
+          battleDialogue.textContent = `The Pokéball snaps shut and lands in the grass!`;
+        }
+
+        const dropT = (elapsed - 1800) / 600;
+        // Drop down with bounce
+        const easeDrop = dropT * dropT;
+        const bounce = Math.abs(Math.sin(dropT * Math.PI * 2)) * 16 * (1 - dropT);
+        anim.ballX = anim.hoverX;
+        anim.ballY = anim.hoverY + (anim.groundY - anim.hoverY) * easeDrop - bounce;
+      }
+      // PHASE 4: SUSPENSEFUL WOBBLES (2400 - 4800ms)
+      else if (elapsed < 4800) {
+        anim.ballX = anim.hoverX;
+        anim.ballY = anim.groundY;
+        anim.pokemonScale = 0;
+
+        // Button flashes red
+        const glowPhase = Math.sin((elapsed - 2400) / 100);
+        anim.buttonGlow = glowPhase > 0 ? '#ef4444' : '#ffffff';
+
+        // Wobble 1 (at 2800ms)
+        if (elapsed >= 2800 && elapsed < 3200) {
+          if (!anim.soundFlags.wobble1) {
+            anim.soundFlags.wobble1 = true;
+            sound.playWobble(1);
+            battleDialogue.textContent = `Wobble... 1!`;
+          }
+          const wT = (elapsed - 2800) / 400;
+          anim.rotation = Math.sin(wT * Math.PI) * -0.45; // Tilt left
+        }
+        // Wobble 2 (at 3500ms)
+        else if (elapsed >= 3500 && elapsed < 3900) {
+          if (!anim.soundFlags.wobble2) {
+            anim.soundFlags.wobble2 = true;
+            sound.playWobble(2);
+            battleDialogue.textContent = `Wobble... 2!`;
+          }
+          const wT = (elapsed - 3500) / 400;
+          anim.rotation = Math.sin(wT * Math.PI) * 0.45; // Tilt right
+        }
+        // Wobble 3 (at 4200ms)
+        else if (elapsed >= 4200 && elapsed < 4600) {
+          if (!anim.soundFlags.wobble3) {
+            anim.soundFlags.wobble3 = true;
+            sound.playWobble(3);
+            battleDialogue.textContent = `Wobble... 3! (Hold your breath!)...`;
+          }
+          const wT = (elapsed - 4200) / 400;
+          anim.rotation = Math.sin(wT * Math.PI) * -0.45;
+        } else {
+          anim.rotation = 0;
+        }
+      }
+      // PHASE 5: SUCCESS! CLICK & CELEBRATION (4800ms+)
+      else {
+        anim.ballX = anim.hoverX;
+        anim.ballY = anim.groundY;
+        anim.rotation = 0;
+        anim.pokemonScale = 0;
+        anim.buttonGlow = '#64748b'; // Locked dark gray
+
+        if (!anim.soundFlags.lock) {
+          anim.soundFlags.lock = true;
+          sound.playClickLock();
+          sound.playCatch();
+          confetti({ particleCount: 130, spread: 85, origin: { y: 0.45 } });
+
+          // Burst 3 gold stars
+          for (let s = 0; s < 12; s++) {
+            state.battle.particles.push({
+              x: anim.ballX,
+              y: anim.ballY,
+              vx: (Math.random() - 0.5) * 10,
+              vy: -Math.random() * 8 - 3,
+              radius: Math.random() * 7 + 4,
+              color: '#ffcb05',
+              life: 1.2
+            });
+          }
+
+          const opp = state.battle.opponent;
+          if (!state.caughtDex[opp.id]) {
+            state.caughtDex[opp.id] = { name: opp.name, count: 0 };
+          }
+          state.caughtDex[opp.id].count++;
+          state.trainerExp += 35;
+          state.coins += 15;
+          updateHUD();
+
+          battleDialogue.textContent = `🎉 CLICK! Gotcha! ${opp.name} was successfully CAUGHT! ⭐`;
+          showBanner(`🎉 Gotcha! ${opp.name} was caught!`, 4000);
+
+          setTimeout(() => {
+            state.battle.active = false;
+            state.battle.catchAnim = null;
+            switchScreen('house');
+          }, 3200);
+        }
+      }
+
+      // Draw the Animated Pokéball
+      drawPokeball(bCtx, anim.ballX, anim.ballY, 26, anim.rotation, anim.openAngle, anim.buttonGlow);
+    }
+
+    // ==========================================
+    // DRAW OPPONENT (If not fully sucked into ball)
+    // ==========================================
+    const animScale = state.battle.catchAnim ? state.battle.catchAnim.pokemonScale : 1.0;
+    const animAlpha = state.battle.catchAnim ? state.battle.catchAnim.pokemonAlpha : 1.0;
+
+    if (animScale > 0.05 && oppImg && oppImg.complete) {
       bCtx.save();
-      if (state.battle.opponentFainted) {
-        bCtx.globalAlpha = 0.6;
+      bCtx.globalAlpha = animAlpha;
+
+      // Soft shadow
+      bCtx.fillStyle = 'rgba(0,0,0,0.18)';
+      bCtx.beginPath();
+      bCtx.ellipse(oppX, oppY + 50, 42 * animScale, 12 * animScale, 0, 0, Math.PI * 2);
+      bCtx.fill();
+
+      const bob = state.battle.opponentFainted ? 16 : Math.sin(time * 3) * 5;
+      const size = 110 * animScale;
+
+      if (state.battle.catchAnim && state.battle.catchAnim.openAngle !== 0) {
+        // Glowing red capture tint!
+        bCtx.shadowColor = '#ef4444';
+        bCtx.shadowBlur = 20;
+      }
+
+      if (state.battle.opponentFainted && !state.battle.catchAnim) {
         bCtx.translate(oppX, oppY + bob);
         bCtx.rotate(0.3);
         bCtx.drawImage(oppImg, -size / 2, -size / 2, size, size);
@@ -652,6 +913,9 @@ function renderBattle() {
       bCtx.restore();
     }
 
+    // ==========================================
+    // DRAW PLAYER PARTNER (Bottom Left)
+    // ==========================================
     const pX = rect.width * 0.28;
     const pY = rect.height * 0.68;
     bCtx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -667,11 +931,12 @@ function renderBattle() {
       bCtx.drawImage(partnerImg, pX - pSize / 2, pY - pSize / 2 + pBob, pSize, pSize);
     }
 
+    // Draw Particles
     for (let i = state.battle.particles.length - 1; i >= 0; i--) {
       const p = state.battle.particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.life -= 0.03;
+      p.life -= 0.025;
       if (p.life <= 0) {
         state.battle.particles.splice(i, 1);
         continue;
@@ -699,7 +964,6 @@ function renderHouse() {
   buildStepTitle.textContent = stage.nextTitle;
   buildRecipeText.textContent = stage.recipeText;
 
-  // Check if player has required materials
   const hasMats = (
     state.houseStage < 4 &&
     state.materials.wood >= stage.needs.wood &&
@@ -722,7 +986,6 @@ function renderHouse() {
     btnHammerBuild.innerHTML = '<span>🔨 Need Materials</span>';
   }
 
-  // Render Caught Pokémon wandering
   houseFriendsStage.innerHTML = '';
   const entries = Object.entries(state.caughtDex);
 
@@ -753,7 +1016,6 @@ function renderHouse() {
   }
 }
 
-// Hammer & Build Button
 btnHammerBuild.addEventListener('click', () => {
   if (state.houseStage >= 4) return;
   const stage = HOUSE_STAGES[state.houseStage];
@@ -770,13 +1032,11 @@ btnHammerBuild.addEventListener('click', () => {
     return;
   }
 
-  // Deduct materials
   state.materials.wood -= stage.needs.wood;
   state.materials.bricks -= stage.needs.bricks;
   state.materials.tiles -= stage.needs.tiles;
   state.materials.cushions -= stage.needs.cushions;
 
-  // Clang Clang Clang!
   sound.playHammer();
   confetti({ particleCount: 90, spread: 75 });
 
@@ -788,7 +1048,6 @@ btnHammerBuild.addEventListener('click', () => {
   showBanner(`🔨 Clang Clang! You built ${newStage.badge}! 🎉`, 3500);
 });
 
-// Buying Materials from Builder Market
 btnBuyMats.forEach(btn => {
   btn.addEventListener('click', () => {
     const item = btn.dataset.item;
