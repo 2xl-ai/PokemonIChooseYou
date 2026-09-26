@@ -29,6 +29,92 @@ const ROCKET_POOL = [
   { id: 23, name: 'Team Rocket Ekans', maxHp: 60, atk: 15, trainer: 'Team Rocket' }
 ];
 
+const MARKET_PRICES = {
+  wood: 40,
+  bricks: 50,
+  tiles: 60,
+  cushions: 80
+};
+
+const HOUSE_STAGES = [
+  {
+    level: 0,
+    badge: 'Stage 0: 📜 Blueprint Plot',
+    nextTitle: 'Next: 🪵 Wooden Frame',
+    recipeText: 'Needs: 2 Wood Planks',
+    needs: { wood: 2, bricks: 0, tiles: 0, cushions: 0 },
+    renderVisual: () => `
+      <div class="stage-visual vis-blueprint">
+        📜📐
+        <span>Blueprint staked out on the hill!</span>
+      </div>
+    `
+  },
+  {
+    level: 1,
+    badge: 'Stage 1: 🪵 Wooden Framework',
+    nextTitle: 'Next: 🧱 Cozy Walls & Door',
+    recipeText: 'Needs: 2 Wood + 2 Stone Bricks',
+    needs: { wood: 2, bricks: 2, tiles: 0, cushions: 0 },
+    renderVisual: () => `
+      <div class="stage-visual">
+        <div class="vis-frame">🪵</div>
+      </div>
+    `
+  },
+  {
+    level: 2,
+    badge: 'Stage 2: 🧱 Cozy Walls & Door',
+    nextTitle: 'Next: 🏠 Pikachu Red Roof',
+    recipeText: 'Needs: 2 Stone Bricks + 2 Roof Tiles',
+    needs: { wood: 0, bricks: 2, tiles: 2, cushions: 0 },
+    renderVisual: () => `
+      <div class="stage-visual">
+        <div class="vis-walls">
+          <div class="vis-window"></div>
+          <div class="vis-door"></div>
+          <div class="vis-window"></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    level: 3,
+    badge: 'Stage 3: 🏠 Pikachu Red Roof',
+    nextTitle: 'Next: 🏰 Dream Pokémon Sanctuary',
+    recipeText: 'Needs: 2 Cozy Cushions',
+    needs: { wood: 0, bricks: 0, tiles: 0, cushions: 2 },
+    renderVisual: () => `
+      <div class="stage-visual vis-roof-container">
+        <div class="vis-roof-top"></div>
+        <div class="vis-walls">
+          <div class="vis-window"></div>
+          <div class="vis-door"></div>
+          <div class="vis-window"></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    level: 4,
+    badge: 'Stage 4: 🏰 Master Pokémon Sanctuary!',
+    nextTitle: 'Completed! 🎉',
+    recipeText: 'Your house is 100% finished! ✨',
+    needs: { wood: 0, bricks: 0, tiles: 0, cushions: 0 },
+    renderVisual: () => `
+      <div class="stage-visual vis-roof-container">
+        <span class="vis-mansion-badge">✨🏰✨</span>
+        <div class="vis-roof-top"></div>
+        <div class="vis-walls">
+          <div class="vis-window"></div>
+          <div class="vis-door"></div>
+          <div class="vis-window"></div>
+        </div>
+      </div>
+    `
+  }
+];
+
 // --- GAME STATE ---
 const state = {
   currentTab: 'explore',
@@ -41,16 +127,19 @@ const state = {
   trainerExp: parseInt(localStorage.getItem('pokemon_exp') || '0', 10),
   caughtDex: JSON.parse(localStorage.getItem('pokemon_caught') || '{}'),
   
-  // Battle state
+  // House Building Progression
+  houseStage: parseInt(localStorage.getItem('pokemon_house_stage') || '0', 10),
+  materials: JSON.parse(localStorage.getItem('pokemon_materials') || '{"wood":0,"bricks":0,"tiles":0,"cushions":0}'),
+
+  // Battle State
   battle: {
     active: false,
     isRocket: false,
     opponent: null,
     opponentHp: 0,
-    turn: 'player', // 'player' | 'opponent' | 'ended'
+    turn: 'player',
     opponentFainted: false,
-    particles: [],
-    ballAnim: null
+    particles: []
   }
 };
 
@@ -92,8 +181,19 @@ const btnPotionQty = document.getElementById('btn-potion-qty');
 const btnCatch = document.getElementById('btn-catch');
 const btnRun = document.getElementById('btn-run');
 
-// House Screen
+// House Screen Elements
+const houseStageBadge = document.getElementById('house-stage-badge');
+const houseStructure = document.getElementById('house-structure');
 const houseFriendsStage = document.getElementById('house-friends-stage');
+const buildStepTitle = document.getElementById('build-step-title');
+const buildRecipeText = document.getElementById('build-recipe-text');
+const btnHammerBuild = document.getElementById('btn-hammer-build');
+const matWood = document.getElementById('mat-wood');
+const matBricks = document.getElementById('mat-bricks');
+const matTiles = document.getElementById('mat-tiles');
+const matCushions = document.getElementById('mat-cushions');
+const marketCoinsVal = document.getElementById('market-coins-val');
+const btnBuyMats = document.querySelectorAll('.btn-buy-mat');
 const btnHouseRest = document.getElementById('btn-house-rest');
 const btnBuyPotion = document.getElementById('btn-buy-potion');
 
@@ -126,13 +226,22 @@ function saveState() {
   localStorage.setItem('pokemon_exp', state.trainerExp);
   localStorage.setItem('pokemon_caught', JSON.stringify(state.caughtDex));
   localStorage.setItem('pokemon_partner_hp', state.partnerHp);
+  localStorage.setItem('pokemon_house_stage', state.houseStage);
+  localStorage.setItem('pokemon_materials', JSON.stringify(state.materials));
 }
 
 function updateHUD() {
   coinsCountEl.textContent = state.coins;
   potionsCountEl.textContent = state.potions;
   btnPotionQty.textContent = state.potions;
+  marketCoinsVal.textContent = state.coins;
   jailCaptureCount.textContent = state.rocketArrests;
+
+  // Materials
+  matWood.textContent = state.materials.wood;
+  matBricks.textContent = state.materials.bricks;
+  matTiles.textContent = state.materials.tiles;
+  matCushions.textContent = state.materials.cushions;
 
   const lvl = Math.floor(state.trainerExp / 100) + 1;
   trainerLevelText.textContent = `Trainer Lv. ${lvl}`;
@@ -146,7 +255,6 @@ function updateHUD() {
   battlePartnerName.textContent = starter.name;
   btnMoveText.textContent = starter.move;
 
-  // Total caught
   const totalCaught = Object.values(state.caughtDex).reduce((acc, v) => acc + v.count, 0);
   dexTotalCaught.textContent = totalCaught;
 
@@ -234,22 +342,18 @@ function rustlePatch(patch) {
 
   const roll = Math.random();
   if (roll < 0.58) {
-    // Wild Pokémon Encounter!
     const wild = WILD_POOL[Math.floor(Math.random() * WILD_POOL.length)];
     startBattle(wild, false);
   } else if (roll < 0.73) {
-    // Team Rocket Ambush!
     sound.playSiren();
     const rocketMon = ROCKET_POOL[Math.floor(Math.random() * ROCKET_POOL.length)];
     startBattle(rocketMon, true);
   } else if (roll < 0.88) {
-    // Found Potion!
     sound.playHeal();
     state.potions++;
     updateHUD();
     showBanner('🧪 You found a hidden Potion in the tall grass!');
   } else {
-    // Found Coins!
     sound.playCoin();
     const foundCoins = Math.floor(Math.random() * 25) + 20;
     state.coins += foundCoins;
@@ -282,11 +386,9 @@ function startBattle(opponent, isRocket = false) {
   state.battle.turn = 'player';
   state.battle.opponentFainted = false;
   state.battle.particles = [];
-  state.battle.ballAnim = null;
 
   switchScreen('battle');
 
-  // Update UI
   opponentName.textContent = opponent.name;
   opponentHpVal.textContent = `${opponent.maxHp}/${opponent.maxHp}`;
   opponentHpFill.style.width = '100%';
@@ -306,12 +408,10 @@ function startBattle(opponent, isRocket = false) {
 }
 
 function updateBattleHUD() {
-  // Opponent HP
   const oppPct = Math.max(0, (state.battle.opponentHp / state.battle.opponent.maxHp) * 100);
   opponentHpFill.style.width = `${oppPct}%`;
   opponentHpVal.textContent = `${Math.max(0, state.battle.opponentHp)}/${state.battle.opponent.maxHp}`;
 
-  // Partner HP
   const partPct = Math.max(0, (state.partnerHp / state.partnerMaxHp) * 100);
   battlePartnerHpFill.style.width = `${partPct}%`;
   battlePartnerHpVal.textContent = `${state.partnerHp}/${state.partnerMaxHp}`;
@@ -324,7 +424,6 @@ function updateBattleHUD() {
     battlePartnerHpFill.style.backgroundColor = '#ef4444';
   }
 
-  // Catch button state
   if (state.battle.opponentFainted && !state.battle.isRocket) {
     btnCatch.classList.remove('disabled');
     btnCatch.classList.add('fainted-ready');
@@ -342,7 +441,6 @@ btnAttack.addEventListener('click', () => {
   const starter = STARTERS[state.partner];
   sound.playMoveSound(state.partner);
 
-  // Spawn elemental particles
   const rect = battleCanvas.getBoundingClientRect();
   for (let i = 0; i < 20; i++) {
     state.battle.particles.push({
@@ -362,7 +460,6 @@ btnAttack.addEventListener('click', () => {
   battleDialogue.textContent = `${starter.name} used ${starter.move} for ${dmg} damage!`;
 
   if (state.battle.opponentHp <= 0) {
-    // Opponent Fainted!
     state.battle.opponentHp = 0;
     state.battle.opponentFainted = true;
     updateBattleHUD();
@@ -409,28 +506,15 @@ btnCatch.addEventListener('click', () => {
     return;
   }
 
-  // Start Catch Animation
   state.battle.turn = 'ended';
   sound.playThrow();
   battleDialogue.textContent = `Throwing Pokéball at ${state.battle.opponent.name}...`;
 
-  const rect = battleCanvas.getBoundingClientRect();
-  state.battle.ballAnim = {
-    x: rect.width * 0.5,
-    y: rect.height * 0.8,
-    targetX: rect.width * 0.7,
-    targetY: rect.height * 0.35,
-    progress: 0,
-    wobbleCount: 0
-  };
-
-  // 3 Wobbles
   setTimeout(() => sound.playWobble(1), 800);
   setTimeout(() => sound.playWobble(2), 1600);
   setTimeout(() => sound.playWobble(3), 2400);
 
   setTimeout(() => {
-    // Caught!
     sound.playCatch();
     confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
 
@@ -478,7 +562,6 @@ function opponentTurn() {
   battleDialogue.textContent = `${opp.name} attacked back for ${dmg} damage!`;
 
   if (state.partnerHp <= 0) {
-    // Partner Fainted!
     handlePartnerFaint();
   } else {
     state.battle.turn = 'player';
@@ -488,22 +571,20 @@ function opponentTurn() {
 // When Opponent Faints
 function handleOpponentFaint() {
   if (state.battle.isRocket) {
-    // Team Rocket Defeated!
     sound.playCatch();
     confetti({ particleCount: 120, spread: 90 });
     state.rocketArrests++;
-    state.coins += 200; // Cash bounty!
+    state.coins += 200; // Big cash reward for house building!
     updateHUD();
 
     battleDialogue.textContent = '🚔 Team Rocket was defeated and sent to JAIL! You earned 200 Coins! 💰';
-    showBanner('🚔 Team Rocket was locked in JAIL! +200 Coins! 💰', 4000);
+    showBanner('🚔 Team Rocket locked in JAIL! +200 Coins for your house! 💰', 4000);
 
     setTimeout(() => {
       state.battle.active = false;
       switchScreen('jail');
     }, 3000);
   } else {
-    // Wild Pokémon fainted -> ready to catch!
     sound.playHit();
     battleDialogue.textContent = `${state.battle.opponent.name} fainted! Tap THROW BALL to catch them! ⭐`;
     showBanner('The wild Pokémon fainted! Throw the Pokéball! 🔴', 3000);
@@ -515,7 +596,6 @@ function handlePartnerFaint() {
   sound.playLoss();
 
   if (state.battle.isRocket) {
-    // Team Rocket steals a random Pokémon!
     const caughtKeys = Object.keys(state.caughtDex);
     if (caughtKeys.length > 0) {
       const stolenKey = caughtKeys[Math.floor(Math.random() * caughtKeys.length)];
@@ -533,7 +613,6 @@ function handlePartnerFaint() {
     showBanner('Your partner fainted! Returned to the House to rest.', 3500);
   }
 
-  // Restore 20 HP so they can move
   state.partnerHp = 20;
   updateHUD();
 
@@ -550,7 +629,6 @@ function renderBattle() {
     bCtx.clearRect(0, 0, rect.width, rect.height);
     const time = performance.now() / 1000;
 
-    // 1. Draw Opponent (Top Right)
     const oppX = rect.width * 0.72;
     const oppY = rect.height * 0.35;
     bCtx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -574,7 +652,6 @@ function renderBattle() {
       bCtx.restore();
     }
 
-    // 2. Draw Player Partner (Bottom Left)
     const pX = rect.width * 0.28;
     const pY = rect.height * 0.68;
     bCtx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -590,7 +667,6 @@ function renderBattle() {
       bCtx.drawImage(partnerImg, pX - pSize / 2, pY - pSize / 2 + pBob, pSize, pSize);
     }
 
-    // 3. Draw Particles
     for (let i = state.battle.particles.length - 1; i >= 0; i--) {
       const p = state.battle.particles[i];
       p.x += p.vx;
@@ -614,12 +690,42 @@ function renderBattle() {
 }
 requestAnimationFrame(renderBattle);
 
-// --- SCREEN 3: HOUSE ---
+// --- SCREEN 3: HOUSE & BUILDER SYSTEM ---
 function renderHouse() {
+  const stage = HOUSE_STAGES[state.houseStage] || HOUSE_STAGES[0];
+  houseStageBadge.textContent = stage.badge;
+  houseStructure.innerHTML = stage.renderVisual();
+
+  buildStepTitle.textContent = stage.nextTitle;
+  buildRecipeText.textContent = stage.recipeText;
+
+  // Check if player has required materials
+  const hasMats = (
+    state.houseStage < 4 &&
+    state.materials.wood >= stage.needs.wood &&
+    state.materials.bricks >= stage.needs.bricks &&
+    state.materials.tiles >= stage.needs.tiles &&
+    state.materials.cushions >= stage.needs.cushions
+  );
+
+  if (state.houseStage >= 4) {
+    btnHammerBuild.classList.add('disabled');
+    btnHammerBuild.classList.remove('ready');
+    btnHammerBuild.innerHTML = '<span>🏆 House Complete!</span>';
+  } else if (hasMats) {
+    btnHammerBuild.classList.remove('disabled');
+    btnHammerBuild.classList.add('ready');
+    btnHammerBuild.innerHTML = '<span>🔨 HAMMER & BUILD!</span>';
+  } else {
+    btnHammerBuild.classList.add('disabled');
+    btnHammerBuild.classList.remove('ready');
+    btnHammerBuild.innerHTML = '<span>🔨 Need Materials</span>';
+  }
+
+  // Render Caught Pokémon wandering
   houseFriendsStage.innerHTML = '';
   const entries = Object.entries(state.caughtDex);
 
-  // Active starter always in house
   const starter = STARTERS[state.partner];
   const starterToken = document.createElement('div');
   starterToken.className = 'friend-token';
@@ -631,8 +737,8 @@ function renderHouse() {
 
   if (entries.length === 0) {
     const emptyMsg = document.createElement('div');
-    emptyMsg.style.cssText = 'color: #92400e; font-size: 12px; font-weight: 700; text-align: center; width: 100%;';
-    emptyMsg.innerHTML = 'Go to the tall grass to catch more friends to live in the house! 🏡';
+    emptyMsg.style.cssText = 'color: #92400e; font-size: 11px; font-weight: 700; text-align: center; width: 100%;';
+    emptyMsg.innerHTML = 'Explore the tall grass to catch more friends to live in your house! 🏡';
     houseFriendsStage.appendChild(emptyMsg);
   } else {
     entries.forEach(([id, item]) => {
@@ -646,6 +752,61 @@ function renderHouse() {
     });
   }
 }
+
+// Hammer & Build Button
+btnHammerBuild.addEventListener('click', () => {
+  if (state.houseStage >= 4) return;
+  const stage = HOUSE_STAGES[state.houseStage];
+  
+  const hasMats = (
+    state.materials.wood >= stage.needs.wood &&
+    state.materials.bricks >= stage.needs.bricks &&
+    state.materials.tiles >= stage.needs.tiles &&
+    state.materials.cushions >= stage.needs.cushions
+  );
+
+  if (!hasMats) {
+    showBanner('You need more materials! Buy them in the Builder Market below! 🏪');
+    return;
+  }
+
+  // Deduct materials
+  state.materials.wood -= stage.needs.wood;
+  state.materials.bricks -= stage.needs.bricks;
+  state.materials.tiles -= stage.needs.tiles;
+  state.materials.cushions -= stage.needs.cushions;
+
+  // Clang Clang Clang!
+  sound.playHammer();
+  confetti({ particleCount: 90, spread: 75 });
+
+  state.houseStage++;
+  updateHUD();
+  renderHouse();
+
+  const newStage = HOUSE_STAGES[state.houseStage];
+  showBanner(`🔨 Clang Clang! You built ${newStage.badge}! 🎉`, 3500);
+});
+
+// Buying Materials from Builder Market
+btnBuyMats.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.dataset.item;
+    const price = MARKET_PRICES[item];
+
+    if (state.coins < price) {
+      showBanner(`Not enough coins! Defeat Team Rocket to get 200 coins! 💰`);
+      return;
+    }
+
+    sound.playCoin();
+    state.coins -= price;
+    state.materials[item]++;
+    updateHUD();
+    renderHouse();
+    showBanner(`Purchased 1 ${item}! Added to your backpack! 🎒`);
+  });
+});
 
 btnHouseRest.addEventListener('click', () => {
   sound.playHeal();

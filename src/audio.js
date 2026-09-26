@@ -47,6 +47,18 @@ class SoundController {
     }
   }
 
+  playHammer() {
+    if (!this.enabled) return;
+    this.init();
+    // Clang! Clang! Clang!
+    [380, 520, 680].forEach((freq, idx) => {
+      setTimeout(() => {
+        this.playTone(freq, 'triangle', 0.1, 0.35);
+        this.playTone(freq * 1.5, 'square', 0.05, 0.15);
+      }, idx * 140);
+    });
+  }
+
   playThrow() {
     if (!this.enabled) return;
     this.init();

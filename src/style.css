@@ -272,10 +272,6 @@ html, body {
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
 }
 
-.btn-primary-fun:active {
-  transform: scale(0.95);
-}
-
 /* SCREEN 2: BATTLE */
 #screen-battle {
   background: linear-gradient(to bottom, #7dd3fc 0%, #86efac 60%, #4ade80 100%);
@@ -446,11 +442,19 @@ html, body {
   border-color: #cbd5e1;
 }
 
-/* SCREEN 3: HOUSE */
+/* SCREEN 3: HOUSE / BUILDER'S SANCTUARY */
 #screen-house {
   background: #fef3c7;
-  padding: 12px;
-  justify-content: space-between;
+  overflow: hidden;
+}
+
+.house-scroll-container {
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
 }
 
 .house-banner {
@@ -459,6 +463,18 @@ html, body {
   padding: 8px 12px;
   border-radius: 16px;
   border: 2px solid #fde68a;
+  position: relative;
+}
+
+.stage-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 2px;
 }
 
 .house-banner h2 {
@@ -473,49 +489,176 @@ html, body {
   font-weight: 600;
 }
 
-.house-room {
-  flex: 1;
-  background: #fde68a;
-  border: 4px solid #b45309;
+/* Visual House Plot Scene */
+.house-plot-scene {
+  background: linear-gradient(to bottom, #bae6fd 0%, #bbf7d0 50%, #86efac 100%);
+  border: 3px solid #b45309;
   border-radius: 20px;
-  margin: 10px 0;
+  padding: 14px 10px;
   position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 0 15px rgba(180, 83, 9, 0.3);
-}
-
-.house-decor {
+  min-height: 180px;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  padding: 12px;
-  font-size: 26px;
+  overflow: hidden;
+  box-shadow: inset 0 0 15px rgba(180, 83, 9, 0.2);
 }
 
-.house-friends-stage {
+.house-structure {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 12px;
   justify-content: center;
   align-items: center;
-  overflow-y: auto;
-  max-height: 220px;
+  margin-bottom: 8px;
 }
 
-.friend-token {
-  background: rgba(255, 255, 255, 0.8);
-  border: 2px solid #f59e0b;
-  border-radius: 18px;
-  padding: 6px 10px;
+/* Dynamic CSS House Stages */
+.stage-visual {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Stage 0: Blueprint Plot */
+.vis-blueprint {
+  background: #bfdbfe;
+  border: 3px dashed #2563eb;
+  border-radius: 12px;
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 28px;
+}
+.vis-blueprint span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e40af;
+  margin-top: 4px;
+}
+
+/* Stage 1: Frame */
+.vis-frame {
+  width: 130px;
+  height: 90px;
+  border: 5px solid #854d0e;
+  border-bottom: 10px solid #713f12;
+  background: rgba(254, 240, 138, 0.4);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.vis-frame::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: #854d0e;
+  top: 50%;
+}
+
+/* Stage 2: Walls & Door */
+.vis-walls {
+  width: 140px;
+  height: 95px;
+  background: #fde68a;
+  border: 4px solid #b45309;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding-bottom: 4px;
+}
+.vis-window {
+  width: 26px;
+  height: 26px;
+  background: #67e8f9;
+  border: 2px solid #b45309;
+  margin-bottom: 30px;
+  border-radius: 4px;
+}
+.vis-door {
+  width: 32px;
+  height: 50px;
+  background: #ef4444;
+  border: 2px solid #991b1b;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+}
+.vis-door::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 24px;
+  width: 4px;
+  height: 4px;
+  background: #fef08a;
+  border-radius: 50%;
+}
+
+/* Stage 3: Roof */
+.vis-roof-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.vis-roof-top {
+  width: 0;
+  height: 0;
+  border-left: 80px solid transparent;
+  border-right: 80px solid transparent;
+  border-bottom: 50px solid #ef4444;
+  position: relative;
+}
+.vis-roof-top::before {
+  content: '⚡';
+  position: absolute;
+  top: 15px;
+  left: -9px;
+  font-size: 18px;
+}
+
+/* Stage 4: Mansion */
+.vis-mansion-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 22px;
+  animation: idleBob 2s infinite;
+}
+
+/* Living Caught Pokémon Stage */
+.house-friends-stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  border-radius: 14px;
+  padding: 6px 10px;
+  min-height: 55px;
+}
+
+.friend-token {
+  background: #ffffff;
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   animation: idleBob 2.5s infinite ease-in-out;
 }
 
 .friend-token img {
-  width: 48px;
-  height: 48px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
 }
 
@@ -527,29 +670,197 @@ html, body {
 
 @keyframes idleBob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-4px); }
 }
 
-.house-actions {
+/* BUILD ACTION CARD */
+.build-card {
+  background: #ffffff;
+  border: 3px solid #f59e0b;
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+}
+
+.build-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.build-step-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.build-recipe-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.btn-hammer-build {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 2px solid #34d399;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.btn-hammer-build.ready {
+  animation: pulseHammer 0.8s infinite alternate;
+}
+
+@keyframes pulseHammer {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  100% { transform: scale(1.06); box-shadow: 0 0 12px 3px rgba(16, 185, 129, 0.8); }
+}
+
+.btn-hammer-build.disabled {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+  cursor: not-allowed;
+}
+
+/* MATERIALS BAR */
+.materials-bar {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mat-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.mat-items {
+  display: flex;
+  gap: 6px;
+}
+
+.mat-pill {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* BUILDER MARKET */
+.builder-market {
+  background: #ffffff;
+  border: 2px solid #fde68a;
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
+.market-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.market-header h3 {
+  font-size: 12px;
+  font-weight: 900;
+  color: #92400e;
+}
+
+.market-coins {
+  font-size: 11px;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.market-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+}
+
+.market-icon {
+  font-size: 20px;
+}
+
+.market-name {
+  font-size: 9px;
+  font-weight: 800;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.market-price {
+  font-size: 10px;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.btn-buy-mat {
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-buy-mat:active {
+  transform: scale(0.94);
+}
+
+.house-footer-actions {
   display: flex;
   gap: 8px;
+  padding-bottom: 10px;
 }
 
-.btn-house-action {
+.btn-house-rest {
   flex: 1;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #fff;
   border: 2px solid #34d399;
-  padding: 12px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 14px;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
 }
 
-.btn-house-action.btn-gold {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  border-color: #fbbf24;
+.btn-potion-buy {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-color: #60a5fa;
 }
 
 /* SCREEN 4: JAIL */

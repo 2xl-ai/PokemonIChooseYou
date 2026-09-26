@@ -49,7 +49,7 @@
       <span id="banner-text">Welcome to the adventure!</span>
     </div>
 
-    <!-- MAIN VIEW CONTAINER (Screens) -->
+    <!-- MAIN VIEW CONTAINER -->
     <main class="main-viewport">
       
       <!-- SCREEN 1: 🌿 EXPLORE (Tall Grass Meadow) -->
@@ -119,32 +119,92 @@
         </div>
       </section>
 
-      <!-- SCREEN 3: 🏡 POKÉMON HOUSE (Sanctuary) -->
+      <!-- SCREEN 3: 🏡 POKÉMON HOUSE (Build It Yourself!) -->
       <section id="screen-house" class="screen-view">
-        <div class="house-banner">
-          <h2>🏡 Pokémon Cozy House</h2>
-          <p>Your caught friends live here happily!</p>
-        </div>
-        
-        <div class="house-room">
-          <div class="house-decor">
-            <span class="decor-item bed">🛏️</span>
-            <span class="decor-item plant">🪴</span>
-            <span class="decor-item fire">🔥</span>
-            <span class="decor-item toy">⚽</span>
+        <div class="house-scroll-container">
+          
+          <div class="house-banner">
+            <div class="stage-badge" id="house-stage-badge">Stage 0: 📜 Blueprint Plot</div>
+            <h2>🏡 Builder's Pokémon House</h2>
+            <p>Earn coins in battles, buy materials, and hammer your house together!</p>
           </div>
-          <div id="house-friends-stage" class="house-friends-stage">
-            <!-- Living friends wandering -->
+          
+          <!-- Visual House Scene (Transforms with Stage) -->
+          <div class="house-plot-scene" id="house-plot-scene">
+            <div class="house-structure" id="house-structure">
+              <!-- Visual house layers (foundation, walls, roof, garden) -->
+            </div>
+            
+            <!-- Living caught Pokémon wander here -->
+            <div id="house-friends-stage" class="house-friends-stage"></div>
           </div>
-        </div>
 
-        <div class="house-actions">
-          <button id="btn-house-rest" class="btn-house-action">
-            <span>🛌 Rest & Heal All HP</span>
-          </button>
-          <button id="btn-buy-potion" class="btn-house-action btn-gold">
-            <span>🪙 Buy Potion (30 Coins)</span>
-          </button>
+          <!-- Build Action Card -->
+          <div class="build-card" id="build-card">
+            <div class="build-card-info">
+              <span class="build-step-title" id="build-step-title">Next: 🪵 Wooden Frame</span>
+              <span class="build-recipe-text" id="build-recipe-text">Needs: 2 Wood Planks</span>
+            </div>
+            <button id="btn-hammer-build" class="btn-hammer-build disabled">
+              <span>🔨 HAMMER & BUILD!</span>
+            </button>
+          </div>
+
+          <!-- Materials Inventory -->
+          <div class="materials-bar">
+            <span class="mat-label">My Backpack:</span>
+            <div class="mat-items">
+              <span class="mat-pill">🪵 <strong id="mat-wood">0</strong></span>
+              <span class="mat-pill">🧱 <strong id="mat-bricks">0</strong></span>
+              <span class="mat-pill">🏠 <strong id="mat-tiles">0</strong></span>
+              <span class="mat-pill">🛏️ <strong id="mat-cushions">0</strong></span>
+            </div>
+          </div>
+
+          <!-- Hardware Store / Builder Market -->
+          <div class="builder-market">
+            <div class="market-header">
+              <h3>🏪 Builder Market (Buy Materials)</h3>
+              <span class="market-coins">🪙 <span id="market-coins-val">100</span> Coins</span>
+            </div>
+            <div class="market-grid">
+              <div class="market-card">
+                <span class="market-icon">🪵</span>
+                <span class="market-name">Wood Plank</span>
+                <span class="market-price">🪙 40</span>
+                <button class="btn-buy-mat" data-item="wood">Buy</button>
+              </div>
+              <div class="market-card">
+                <span class="market-icon">🧱</span>
+                <span class="market-name">Stone Brick</span>
+                <span class="market-price">🪙 50</span>
+                <button class="btn-buy-mat" data-item="bricks">Buy</button>
+              </div>
+              <div class="market-card">
+                <span class="market-icon">🏠</span>
+                <span class="market-name">Roof Tile</span>
+                <span class="market-price">🪙 60</span>
+                <button class="btn-buy-mat" data-item="tiles">Buy</button>
+              </div>
+              <div class="market-card">
+                <span class="market-icon">🛏️</span>
+                <span class="market-name">Cushion</span>
+                <span class="market-price">🪙 80</span>
+                <button class="btn-buy-mat" data-item="cushions">Buy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- House Rest Button -->
+          <div class="house-footer-actions">
+            <button id="btn-house-rest" class="btn-house-rest">
+              <span>🛌 Rest in House (Heal All HP)</span>
+            </button>
+            <button id="btn-buy-potion" class="btn-house-rest btn-potion-buy">
+              <span>🧪 Buy Potion (30 Coins)</span>
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -176,7 +236,7 @@
         </div>
 
         <div class="jail-reward-box">
-          <h3>💰 Bounty Rewards:</h3>
+          <h3>💰 How to Earn Coins for Your House:</h3>
           <p>Defeat Team Rocket when they ambush in the grass to earn <strong>200 PokéCoins</strong> and send them to jail!</p>
         </div>
       </section>
@@ -206,7 +266,7 @@
       </button>
       <button class="nav-tab" data-tab="house">
         <span class="nav-icon">🏡</span>
-        <span class="nav-text">House</span>
+        <span class="nav-text">Build House</span>
       </button>
       <button class="nav-tab" data-tab="jail">
         <span class="nav-icon">🚔</span>
