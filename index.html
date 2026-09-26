@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#4CAF50" />
+  <title>Pokémon: I Choose You!</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23EE1515'/><path d='M2 50 H98' stroke='%23222' stroke-width='8'/><path d='M2 50 A48 48 0 0 0 98 50 Z' fill='%23FFF'/><circle cx='50' cy='50' r='16' fill='%23FFF' stroke='%23222' stroke-width='6'/><circle cx='50' cy='50' r='8' fill='%23222'/></svg>" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Top HUD -->
+    <header class="hud-header">
+      <div class="trainer-badge">
+        <span class="trainer-avatar">🧢</span>
+        <div class="trainer-info">
+          <span class="trainer-level">Trainer Lv. 1</span>
+          <div class="exp-track">
+            <div id="exp-bar" class="exp-bar" style="width: 10%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-counters">
+        <div class="badge-item pokedex-btn" id="btn-pokedex" title="Pokédex">
+          <span>📖</span>
+          <span id="caught-count">0</span>
+        </div>
+        <div class="badge-item sound-btn" id="btn-sound" title="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="game-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Message / Notification Banner -->
+      <div id="game-banner" class="game-banner hidden">
+        <span id="banner-text">A wild Pokémon appeared!</span>
+      </div>
+
+      <!-- Action Floating Popups -->
+      <div id="fx-layer" class="fx-layer"></div>
+    </main>
+
+    <!-- Bottom Controls & Selector -->
+    <footer class="hud-footer">
+      <!-- Starter Selection Bar -->
+      <div class="starter-bar">
+        <span class="starter-label">My Partner:</span>
+        <div class="starter-chips" id="starter-chips">
+          <button class="starter-chip active" data-pokemon="bulbasaur" title="Bulbasaur">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbasaur" />
+            <span>Bulbasaur</span>
+          </button>
+          <button class="starter-chip" data-pokemon="pikachu" title="Pikachu">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="Pikachu" />
+            <span>Pikachu</span>
+          </button>
+          <button class="starter-chip" data-pokemon="charmander" title="Charmander">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander" />
+            <span>Charmander</span>
+          </button>
+          <button class="starter-chip" data-pokemon="squirtle" title="Squirtle">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Squirtle" />
+            <span>Squirtle</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-controls">
+        <button id="btn-choose-you" class="btn-choose-you">
+          <span class="btn-icon">✨</span>
+          <span class="btn-text">I CHOOSE YOU!</span>
+        </button>
+        <button id="btn-next-wild" class="btn-secondary">
+          <span>🌿 Next Wild</span>
+        </button>
+      </div>
+
+      <!-- Swipe / Flick Prompt -->
+      <div class="swipe-hint" id="swipe-hint">
+        <span>👆 Swipe the Pokéball up to catch!</span>
+      </div>
+    </footer>
+
+    <!-- Pokédex Modal -->
+    <div id="pokedex-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>📖 My Caught Pokémon</h2>
+          <button id="btn-close-pokedex" class="btn-close">&times;</button>
+        </div>
+        <div id="pokedex-grid" class="pokedex-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
